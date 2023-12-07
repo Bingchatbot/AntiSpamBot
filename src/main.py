@@ -88,7 +88,7 @@ def webhook():
                             send_message(from_id, text_message)
                         else:
                             text_message += f'''\n--- Сообщение не отправлено 
-                            пользователю {first_name} ({from_id}), нет чата с ботом'''
+                            \nпользователю {first_name} ({from_id}), нет чата с ботом'''
                         
                         for i in range(len(admin_use_bot)):
                             send_admin_message(admin_use_bot[i], 
