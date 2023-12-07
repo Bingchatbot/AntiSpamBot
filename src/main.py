@@ -68,8 +68,7 @@ def webhook():
                     admin_use_bot.append(admin)
                 else:
                     admin_message += f'''\n--- Сообщение не отправлено
-                    \nадминистратору группы {dict_admins[admin]} ({admin}), 
-                    \nтак как у него нет чата с ботом'''
+администратору группы {dict_admins[admin]} ({admin}), так как у него нет чата с ботом'''
             # делаем список из слов в секрете для проверки их в тексте
             words = WORDS.split(', ')
             # ищем слова в тексте, если есть удаляем сообщение и отправляем копию
@@ -78,17 +77,13 @@ def webhook():
                     db[users_group]["spam_or_no"][date_message] = data["message"]
                     delete_message(chat_id, message_id)
                     restrict_member(chat_id, from_id)
-                    text_message = f'''
-                    Удалено сообщение и ограничены права до проверки модератором
-                    \nпользователя {first_name} ({from_id}) 
-                    \nот {datetime.fromtimestamp(date_message).strftime("%d.%m.%Y %H:%M:%S")}:
-                    \n{text}\n'''
+                    text_message = f'''Удалено сообщение и ограничены права до проверки модератором пользователя {first_name} ({from_id}) от {datetime.fromtimestamp(date_message).strftime("%d.%m.%Y %H:%M:%S")}\n"{text}"\n'''
                     try:
                         if get_chat(from_id):
                             send_message(from_id, text_message)
                         else:
                             text_message += f'''\n--- Сообщение не отправлено 
-                            \nпользователю {first_name} ({from_id}), нет чата с ботом'''
+пользователю {first_name} ({from_id}), нет чата с ботом'''
                         
                         for i in range(len(admin_use_bot)):
                             send_admin_message(admin_use_bot[i], 
@@ -109,12 +104,12 @@ def webhook():
             if callback_list[0] == "unrestrict_member":
                 unrestrict_member(callback_list[1], callback_list[2])
                 text_edit += f'''\nСняты ограничения администратором
-                \n{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
+{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
                 edit_message(chat_id_edit, message_id, text_edit)
             elif callback_list[0] == "ban_member":
                 ban_member(callback_list[1], callback_list[2])
                 text_edit += f'''\nПользователь забанен администратором
-                \n{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
+{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
                 edit_message(chat_id_edit, message_id, text_edit)
         except Exception as e:
             print(f"ERROR callback {chat_id_edit} = {e}")
