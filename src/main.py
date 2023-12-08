@@ -53,6 +53,7 @@ def webhook():
             # и если его сообщений больше чем COUNTS, то отключаем бота
             dict_admins = get_admin(chat_id)
             if from_id in dict_admins:
+                db[users_group][user_id] += 1
                 return ""
             elif user_id in db[users_group]:
                 db[users_group][user_id] += 1
@@ -60,6 +61,10 @@ def webhook():
                     return ""
             else:
                 db[users_group][user_id] = 1
+
+            if not dict_admins:
+                print('ERROR: Словарь администраторов пуст, бот не проверяет сообщение')
+                return ""
               
             admin_use_bot = []
             admin_message = ""
@@ -69,6 +74,10 @@ def webhook():
                 else:
                     admin_message += f'''\n--- Сообщение не отправлено
 администратору группы {dict_admins[admin]} ({admin}), так как у него нет чата с ботом'''
+
+            if not admin_use_bot:
+                print('ERROR : Нет ни одного чата админа с ботом, бот не проверяет сообщение')
+                return ""
             # делаем список из слов в секрете для проверки их в тексте
             words = WORDS.split(', ')
             # ищем слова в тексте, если есть удаляем сообщение и отправляем копию
