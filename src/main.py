@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from flask import Flask, request
 from replit import db
-from utils import send_message, edit_message, delete_message, get_admin, restrict_member, get_chat, send_admin_message, unrestrict_member, ban_member
+from utils import send_message, edit_message, delete_message, get_group_admin, restrict_member, get_user_use_bot, send_admin_message, unrestrict_member, ban_member, get_id_moderator
 
 # создаем сервер
 app = Flask(__name__)
@@ -51,9 +51,12 @@ def webhook():
             text = data["message"]["text"]
             # проверяем пользователя на наличие прав админа, а также в базе данных 
             # и если его сообщений больше чем COUNTS, то отключаем бота
-            dict_admins = get_admin(chat_id)
-            if from_id in dict_admins:
-                db[users_group][user_id] += 1
+            group_admins = get_group_admin(chat_id)
+            if from_id in group_admins:
+                if db[users_group].get(from_id) is not None:
+                    db[users_group][user_id] += 1
+                else:
+                    db[users_group][user_id] = 1
                 return ""
             elif user_id in db[users_group]:
                 db[users_group][user_id] += 1
@@ -62,18 +65,24 @@ def webhook():
             else:
                 db[users_group][user_id] = 1
 
-            if not dict_admins:
-                print('ERROR: Словарь администраторов пуст, бот не проверяет сообщение')
+            moderators = get_id_moderator()
+            if not moderators:
+                if group_admins:
+                    moderators = group_admins
+                else:
+                    print("ERROR: Словари администраторов и модераторов пусты, бот не проверяет сообщение")
+                    return ""
+            elif from_id in moderators:
                 return ""
               
             admin_use_bot = []
             admin_message = ""
-            for admin in dict_admins:
+            for admin in moderators:
                 if get_chat(admin):
                     admin_use_bot.append(admin)
                 else:
                     admin_message += f'''\n--- Сообщение не отправлено
-администратору группы {dict_admins[admin]} ({admin}), так как у него нет чата с ботом'''
+администратору группы {moderators[admin]} ({admin}), так как у него нет чата с ботом'''
 
             if not admin_use_bot:
                 print('ERROR : Нет ни одного чата админа с ботом, бот не проверяет сообщение')
