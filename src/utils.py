@@ -50,7 +50,8 @@ def get_id_moderator():
         for i in range(len(list_admin)):
             result = get_moderator(list_admin[i])
             if result:
-                dict_id_moderator[result['id']] = result['first_name']
+                if result.get('first_name'):
+                    dict_id_moderator[result['id']] = result['first_name']
     return dict_id_moderator
 # функция получения словаря администраторов группы
 def get_group_admin(chat_id):
