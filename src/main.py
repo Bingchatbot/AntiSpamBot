@@ -103,7 +103,7 @@ def webhook():
                         if get_user_use_bot(from_id):
                             result = send_message(from_id, text_message)
                             if result:
-                                db[users_group]["edit_message"][date_message] = {"user_restrict": [from_id, result["message_id"]]}
+                                db[users_group]["edit_message"][str(date_message)] = {"user_restrict": [from_id, result["message_id"]]}
                         else:
                             text_message += f'''\n--- Сообщение не отправлено 
 пользователю {first_name} ({from_id}), нет чата с ботом'''
@@ -112,7 +112,7 @@ def webhook():
                             send_admin_message(admin_use_bot[i], 
                                                text_message + admin_message,
                                                users_group,
-                                               date_message,
+                                               str(date_message),
                                                from_id)
                     except Exception as e:
                         print(f'ERROR {users_group} = {e}')
@@ -151,12 +151,12 @@ def webhook():
                                    unrestrict_callback, ban_callback)
             elif callback_list[0] == "ban_member":
                 ban_member(group_chat_id, user_from_id)
-                text_edit += f'''\nПользователь забанен администратором
+                text_edit += f'''\nПользователь забанен модератором
 {data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
                 edit_admin_message(users_group, date_message, text_edit, unban_callback)
             elif callback_list[0] == "unban_member":
                 unban_member(group_chat_id, user_from_id)
-                text_edit += f'''\nПользователь разбанен администратором
+                text_edit += f'''\nПользователь разбанен модератором
 {data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
                 edit_admin_message(users_group, date_message, text_edit, ban_callback)
         except Exception as e:
