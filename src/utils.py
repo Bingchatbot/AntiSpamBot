@@ -124,7 +124,13 @@ def send_admin_message(chat_id, text_message, users_group, date_message, user_fr
         print(f'''File "main.py", send_admin_message, status_code 
         {response.status_code}, response.text = {response.text}''')
         return False
-    db[users_group]["edit_message"][date_message] = {"moderators": {chat_id: [response.json()["result"]["message_id"], user_from_id]}}
+    if db[users_group]["edit_message"].get(date_message):
+        if db[users_group]["edit_message"][date_message].get("moderators"):
+            db[users_group]["edit_message"][date_message]["moderators"][chat_id] = [response.json()["result"]["message_id"], user_from_id]
+        else:
+            db[users_group]["edit_message"][date_message]["moderators"] = {chat_id: [response.json()["result"]["message_id"], user_from_id]}
+    else:
+        db[users_group]["edit_message"][date_message] = {"moderators": {chat_id: [response.json()["result"]["message_id"], user_from_id]}}
     return
 # функция отмены ограничения прав пользователя
 def unrestrict_member(chat_id, from_id):
