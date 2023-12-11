@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from flask import Flask, request
 from replit import db
-from utils import send_message, edit_message, delete_message, get_group_admin, restrict_member, get_user_use_bot, send_admin_message, unrestrict_member, ban_member, get_id_moderator, unban_member
+from utils import send_message, delete_message, get_group_admin, restrict_member, get_user_use_bot, send_admin_message, unrestrict_member, ban_member, get_id_moderator, unban_member
 from moderator_callback import edit_admin_message
 
 
@@ -81,7 +81,7 @@ def webhook():
             admin_use_bot = []
             admin_message = ""
             for admin in moderators:
-                if get_chat(admin):
+                if get_user_use_bot(admin):
                     admin_use_bot.append(admin)
                 else:
                     admin_message += f'''\n--- Сообщение не отправлено
@@ -100,8 +100,8 @@ def webhook():
                     restrict_member(chat_id, from_id)
                     text_message = f'''Удалено сообщение и ограничены права до проверки модератором пользователя {first_name} ({from_id}) от {datetime.fromtimestamp(date_message).strftime("%d.%m.%Y %H:%M:%S")}\n"{text}"\n'''
                     try:
-                        if get_chat(from_id):
-                            send_message(from_id, text_message)
+                        if get_user_use_bot(from_id):
+                            result = send_message(from_id, text_message)
                             if result:
                                 db[users_group]["edit_message"][date_message] = {"user_restrict": [from_id, result["message_id"]]}
                         else:
