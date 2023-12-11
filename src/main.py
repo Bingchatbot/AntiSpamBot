@@ -3,7 +3,9 @@ import os
 from datetime import datetime
 from flask import Flask, request
 from replit import db
-from utils import send_message, edit_message, delete_message, get_group_admin, restrict_member, get_user_use_bot, send_admin_message, unrestrict_member, ban_member, get_id_moderator
+from utils import send_message, edit_message, delete_message, get_group_admin, restrict_member, get_user_use_bot, send_admin_message, unrestrict_member, ban_member, get_id_moderator, unban_member
+from moderator_callback import edit_admin_message
+
 
 # создаем сервер
 app = Flask(__name__)
@@ -37,6 +39,7 @@ def webhook():
             db[users_group]["left_user"] = {}
             db[users_group]["spam_or_no"] = {}
             db[users_group]["errors"] = {}
+            db[users_group]["edit_message"] = {}
         # запись в базу данных и удаление сервисных сообщений
         if data["message"].get("new_chat_participant") is not None:
             db[users_group]["new_user"][date_message] = data["message"]["new_chat_participant"]
@@ -99,6 +102,8 @@ def webhook():
                     try:
                         if get_chat(from_id):
                             send_message(from_id, text_message)
+                            if result:
+                                db[users_group]["edit_message"][date_message] = {"user_restrict": [from_id, result["message_id"]]}
                         else:
                             text_message += f'''\n--- Сообщение не отправлено 
 пользователю {first_name} ({from_id}), нет чата с ботом'''
@@ -106,7 +111,8 @@ def webhook():
                         for i in range(len(admin_use_bot)):
                             send_admin_message(admin_use_bot[i], 
                                                text_message + admin_message,
-                                               chat_id,
+                                               users_group,
+                                               date_message,
                                                from_id)
                     except Exception as e:
                         print(f'ERROR {users_group} = {e}')
@@ -119,16 +125,40 @@ def webhook():
         \n{(datetime.now()).strftime("%d.%m.%Y %H:%M:%S")}'''
         try:
             callback_list = data["callback_query"]["data"].split(',')
+            users_group = callback_list[1]
+            date_message = callback_list[2]
+            group_chat_id = users_group.replace('users', '')
+            user_from_id = db[users_group]["edit_message"][date_message]["moderators"][str(chat_id_edit)][1]
+            restrict_callback = ["Вернуть ограничение доступа",
+                                 f"restrict_member,{users_group},{date_message}"]
+            unrestrict_callback = ["Отменить ограничение доступа",
+                                   f"unrestrict_member,{users_group},{date_message}"]
+            ban_callback = ["Забанить за спам", 
+                            f"ban_member,{users_group},{date_message}"]
+            unban_callback = ["Отменить бан участника",
+                              f"unban_member,{users_group},{date_message}"]
             if callback_list[0] == "unrestrict_member":
-                unrestrict_member(callback_list[1], callback_list[2])
-                text_edit += f'''\nСняты ограничения администратором
+                unrestrict_member(group_chat_id, user_from_id)
+                text_edit += f'''\nСняты ограничения модератором
 {data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
-                edit_message(chat_id_edit, message_id, text_edit)
+                edit_admin_message(users_group, date_message, text_edit,
+                                   restrict_callback, ban_callback)
+            elif callback_list[0] == "restrict_member":
+                restrict_member(group_chat_id, user_from_id)
+                text_edit += f'''\nВозвращены ограничения модератором
+{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
+                edit_admin_message(users_group, date_message, text_edit,
+                                   unrestrict_callback, ban_callback)
             elif callback_list[0] == "ban_member":
-                ban_member(callback_list[1], callback_list[2])
+                ban_member(group_chat_id, user_from_id)
                 text_edit += f'''\nПользователь забанен администратором
 {data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
-                edit_message(chat_id_edit, message_id, text_edit)
+                edit_admin_message(users_group, date_message, text_edit, unban_callback)
+            elif callback_list[0] == "unban_member":
+                unban_member(group_chat_id, user_from_id)
+                text_edit += f'''\nПользователь разбанен администратором
+{data["callback_query"]["from"]["first_name"]} ({chat_id_edit})'''
+                edit_admin_message(users_group, date_message, text_edit, ban_callback)
         except Exception as e:
             print(f"ERROR callback {chat_id_edit} = {e}")
     return ""
