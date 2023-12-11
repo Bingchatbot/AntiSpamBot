@@ -1,6 +1,7 @@
 import json
 import requests
 import os
+from replit import db
 
 
 TOKEN = os.environ["TOKEN"]
@@ -14,6 +15,7 @@ url_user_use_bot = "https://api.telegram.org/bot{}/sendChatAction".format(TOKEN)
 url_restrict = "https://api.telegram.org/bot{}/restrictChatMember".format(TOKEN)
 url_ban_member = "https://api.telegram.org/bot{}/banChatMember".format(TOKEN)
 url_get_moderator = "https://api.telegram.org/bot{}/getChat".format(TOKEN)
+url_unban_member = "https://api.telegram.org/bot{}/unbanChatMember".format(TOKEN)
 
 # функция отправки сообщения
 def send_message(chat_id, text_message):
@@ -23,7 +25,8 @@ def send_message(chat_id, text_message):
     if response.status_code != 200: 
         print(f'''File "main.py", send_message, status_code 
         {response.status_code}, response.text = {response.text}''')
-    return
+        return False
+    return response.json()['result']
 # функция изменения сообщения
 def edit_message(chat_id, message_id, text_edit):
     response = requests.post(
@@ -101,10 +104,10 @@ def get_moderator(chat_id):
         {response.status_code}, response.text = {response.text}''')
         return False
     return response.json()['result']
-# функция отправки сообщения администратору
-def send_admin_message(chat_id, text_message, group_id, user_id):
-    unrestrict_member = f"unrestrict_member,{group_id},{user_id}"
-    ban_member = f"ban_member,{group_id},{user_id}"
+# функция отправки сообщения модераторам
+def send_admin_message(chat_id, text_message, users_group, date_message, user_from_id):
+    unrestrict_member = f"unrestrict_member,{users_group},{date_message}"
+    ban_member = f"ban_member,{users_group},{date_message}"
     reply_markup = {"inline_keyboard": 
                     [[{"text": "Отменить ограничение доступа", 
                        "callback_data": unrestrict_member}], 
@@ -120,6 +123,8 @@ def send_admin_message(chat_id, text_message, group_id, user_id):
     if response.status_code != 200: 
         print(f'''File "main.py", send_admin_message, status_code 
         {response.status_code}, response.text = {response.text}''')
+        return False
+    db[users_group]["edit_message"][date_message] = {"moderators": {chat_id: [response.json()["result"]["message_id"], user_from_id]}}
     return
 # функция отмены ограничения прав пользователя
 def unrestrict_member(chat_id, from_id):
@@ -146,5 +151,14 @@ def ban_member(chat_id, from_id):
     )
     if response.status_code != 200: 
         print(f'''File "main.py", ban_member, status_code 
+        {response.status_code}, response.text = {response.text}''')
+    return
+# функция отмены бана пользователя в группе
+def unban_member(chat_id, from_id):
+    response = requests.post(
+      url_unban_member, data = {"chat_id": chat_id, "user_id": from_id}
+    )
+    if response.status_code != 200: 
+        print(f'''File "main.py", unban_member, status_code 
         {response.status_code}, response.text = {response.text}''')
     return
